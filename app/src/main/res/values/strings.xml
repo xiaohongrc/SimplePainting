@@ -1,0 +1,16 @@
+<resources>
+
+    <string name="feedback_message">This app version : %1$s \n Android Version : %2$s </string>
+    <string name="feedback_email">hongenit@126.com</string>
+
+    <!-- need to i18n -->
+    <string name="app_name">SimplestPainting</string>
+    <string name="no_more_data">No more data</string>
+
+    <string name="contact_me">Any questions please contact us:</string>
+    <string name="version">Version:</string>
+    <string name="drawer_item_feed_back">Feed back</string>
+    <string name="drawer_setting">Setting</string>
+    <string name="feedback_title">I have problem</string>
+
+</resources>

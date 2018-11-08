@@ -83,7 +83,8 @@ public class GestureCreator {
   }
 
   private boolean insideCanvas(float touchX, float touchY) {
-    return canvasRect.contains(touchX, touchY);
+    return true;
+//    return canvasRect.contains(touchX, touchY);
   }
 
   public void setConfig(DrawableViewConfig config) {

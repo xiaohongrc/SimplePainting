@@ -12,5 +12,7 @@
     <string name="drawer_item_feed_back">Feed back</string>
     <string name="drawer_setting">Setting</string>
     <string name="feedback_title">I have problem</string>
+    <string name="drawer_item_change_bg_color">change background color</string>
+    <string name="permission_storage_denied_tip">You should give us this permission or you can\'t save this img</string>
 
 </resources>

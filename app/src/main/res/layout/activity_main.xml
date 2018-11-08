@@ -10,7 +10,6 @@
 
 
     <ImageButton
-        android:id="@+id/ib_open_drawer"
         android:layout_width="@dimen/drawer_open_btn_size"
         android:layout_height="@dimen/drawer_open_btn_size"
         android:layout_marginTop="80dp"
@@ -21,6 +20,7 @@
     <FrameLayout
         android:id="@+id/fl_main_content"
         android:layout_width="match_parent"
+        android:background="@color/colorPrimaryDark"
         android:layout_height="match_parent">
 
         <include layout="@layout/layout_main_content" />

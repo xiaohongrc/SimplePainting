@@ -301,8 +301,8 @@ public class DiscreteSeekBar extends View {
     public void setNumericTransformer(@Nullable NumericTransformer transformer) {
         mNumericTransformer = transformer != null ? transformer : new DefaultNumericTransformer();
         //We need to refresh the PopupIndicator view
-        updateIndicatorSizes();
-        updateProgressMessage(mValue);
+//        updateIndicatorSizes();
+//        updateProgressMessage(mValue);
     }
 
     /**

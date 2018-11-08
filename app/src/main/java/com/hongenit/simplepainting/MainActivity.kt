@@ -1,12 +1,14 @@
 package com.hongenit.simplepainting
 
+import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.Color
 import android.os.Bundle
+import android.os.Handler
 import android.support.v4.widget.DrawerLayout
 import android.view.View
+import android.view.WindowManager
 import android.widget.Toast
 import com.example.seekbarlibrary.discreteseekbar.DiscreteSeekBar
 import com.google.android.gms.ads.AdListener
@@ -16,14 +18,12 @@ import com.hongenit.simplepainting.colorpicker.ColorDialog
 import com.hongenit.simplepainting.common.BaseActivity
 import com.hongenit.simplepainting.common.Constants
 import com.hongenit.simplepainting.setting.SettingActivity
-import com.hongenit.simplepainting.util.EventUtil
-import com.hongenit.simplepainting.util.Utils
 import kotlinx.android.synthetic.main.activity_main_menu.*
 import kotlinx.android.synthetic.main.layout_main_content.*
 import java.util.*
 import com.hongenit.simplepainting.drawableview.DrawableViewConfig
 import com.hongenit.simplepainting.drawableview.DrawableView
-import com.hongenit.simplepainting.util.LogUtil
+import com.hongenit.simplepainting.util.*
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 import java.io.FileOutputStream
@@ -31,6 +31,9 @@ import java.io.IOException
 
 
 class MainActivity : BaseActivity(), View.OnClickListener {
+
+
+    val handler: Handler = Handler()
 
     private lateinit var drawableView: DrawableView
     private var config = DrawableViewConfig()
@@ -72,12 +75,10 @@ class MainActivity : BaseActivity(), View.OnClickListener {
         when (v) {
 
             bt_save -> {
-                val obtainBitmap = drawableView.obtainBitmap()
-                val name = System.currentTimeMillis().toString() + ".jpg"
-                val saveBitmap = saveBitmap(obtainBitmap, getImgName(name))
-                if (saveBitmap != null) {
-                    Toast.makeText(this, "图片已保存到：\n $saveBitmap", Toast.LENGTH_LONG).show()
-                }
+                PermissionUtils.askPermission(this, arrayOf(
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        , PermissionUtils.REQUEST_CODE_STORAGE, savePictureTask)
+
             }
             bt_clear -> {
                 drawableView.clear()
@@ -92,6 +93,7 @@ class MainActivity : BaseActivity(), View.OnClickListener {
                         bt_color.setBackgroundColor(it)
                         iv_paint_style.setBackgroundColor(it)
                         config.strokeColor = it
+                        Pref.getInstance().setPaintColor(it)
                     })
                 }
                 colorDialog?.show()
@@ -102,6 +104,7 @@ class MainActivity : BaseActivity(), View.OnClickListener {
                 if (bgColorDialog == null) {
                     bgColorDialog = ColorDialog(this, ColorDialog.ColorChooseListener {
                         drawableView.setCanvaBgColor(it)
+                        Pref.getInstance().setCanvasColor(it)
                     })
                 }
                 bgColorDialog?.show()
@@ -140,9 +143,10 @@ class MainActivity : BaseActivity(), View.OnClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
         initView()
         initAdMob()
-        initUi()
+
 //        loadAdView()
     }
 
@@ -191,34 +195,52 @@ class MainActivity : BaseActivity(), View.OnClickListener {
         bt_undo.setOnClickListener(this)
         bt_save.setOnClickListener(this)
         mSeekBar = discrete2 as DiscreteSeekBar
-        mSeekBar.max = 100
-        mSeekBar.min = 1
+        mSeekBar.max = Constants.PAINT_SIZE_MAX
+        mSeekBar.min = Constants.PAINT_SIZE_MIN
         mSeekBar.numericTransformer = object : DiscreteSeekBar.NumericTransformer() {
             override fun transform(value: Int): Int {
-                LogUtil.hong("value  = $value")
-                config.strokeWidth = value.toFloat()
-                iv_paint_style.layoutParams.width = value * 2
-                iv_paint_style.layoutParams.height = value * 2
-                iv_paint_style.requestLayout()
+                val paintSize = ScreenUtil.dip2px(this@MainActivity, value.toFloat()).toFloat()
+                LogUtil.hong("value = $value, paintSize = $paintSize")
+                refreshPaintSize(paintSize)
+                Pref.getInstance().setPaintSize(paintSize)
                 return value
             }
         }
+        bt_color.setBackgroundColor(Pref.getInstance().getPaintColor())
+        iv_paint_style.setBackgroundColor(Pref.getInstance().getPaintColor())
 
+        initPaintView()
         initDrawer()
     }
 
+    private fun refreshPaintSize(paintSize: Float) {
+        iv_paint_style.visibility = View.VISIBLE
+        config.strokeWidth = paintSize
+        iv_paint_style.layoutParams.width = paintSize.toInt()
+        iv_paint_style.layoutParams.height = paintSize.toInt()
+        iv_paint_style.requestLayout()
 
-    private fun initUi() {
+        handler.removeCallbacks(mHidePaintSizeTask)
+        handler.postDelayed(mHidePaintSizeTask, 3000)
+    }
+
+
+    val mHidePaintSizeTask: Runnable = Runnable {
+        iv_paint_style.visibility = View.GONE
+    }
+
+    private fun initPaintView() {
         drawableView = paintView as DrawableView
-
-        config.strokeColor = Color.RED
+        config.strokeColor = Pref.getInstance().getPaintColor()
         config.isShowCanvasBounds = true
-        config.strokeWidth = 20.0f
+        refreshPaintSize(Pref.getInstance().getPaintSize())
+        mSeekBar.progress = ScreenUtil.px2dip(this, Pref.getInstance().getPaintSize())
         config.minZoom = 1.0f
         config.maxZoom = 3.0f
-        config.canvasHeight = 1920
-        config.canvasWidth = 1080
+        config.canvasHeight = ScreenUtil.getScreenHeight(this)
+        config.canvasWidth = ScreenUtil.getScreenWidth(this)
         drawableView.setConfig(config)
+        drawableView.setCanvaBgColor(Pref.getInstance().getCanvasColor())
 
     }
 
@@ -266,6 +288,44 @@ class MainActivity : BaseActivity(), View.OnClickListener {
         tv_menu_item2.setOnClickListener(this)
         tv_menu_item3.setOnClickListener(this)
         close_menu.setOnClickListener(this)
+
+
+    }
+
+
+    val savePictureTask: Runnable = Runnable {
+        LogUtil.hong("thread  = ${Thread.currentThread().name}")
+        val obtainBitmap = drawableView.obtainBitmap()
+        val name = System.currentTimeMillis().toString() + ".jpg"
+        val saveBitmap = saveBitmap(obtainBitmap, getImgName(name))
+        if (saveBitmap != null) {
+            Toast.makeText(this, "图片已保存到：\n $saveBitmap", Toast.LENGTH_LONG).show()
+        }
+
+
+//        handler.post{
+//            val obtainBitmap = drawableView.obtainBitmap()
+//            val name = System.currentTimeMillis().toString() + ".jpg"
+//            val saveBitmap = saveBitmap(obtainBitmap, getImgName(name))
+//            if (saveBitmap != null) {
+//                Toast.makeText(this, "图片已保存到：\n $saveBitmap", Toast.LENGTH_LONG).show()
+//            }
+//        }
+
+    }
+
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == PermissionUtils.REQUEST_CODE_STORAGE) {
+            PermissionUtils.onRequestPermissionsResult(requestCode, grantResults, savePictureTask, Runnable {
+                handler.post {
+                    Toast.makeText(this@MainActivity, getString(R.string.permission_storage_denied_tip), Toast.LENGTH_LONG).show()
+                }
+            })
+
+
+        }
 
 
     }

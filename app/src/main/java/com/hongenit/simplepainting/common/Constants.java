@@ -41,4 +41,10 @@ public interface Constants {
     long ONE_MINUTE = 60 * ONE_SECOND;
     long ONE_HOUR = 60 * ONE_MINUTE;
     long ONE_DAY = 24 * ONE_HOUR;
+
+
+    // 画笔粗细最大值，最小值
+    int PAINT_SIZE_MAX = 50;
+    int PAINT_SIZE_MIN = 1;
+
 }

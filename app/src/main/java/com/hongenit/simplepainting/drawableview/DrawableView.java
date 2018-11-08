@@ -24,6 +24,7 @@ import com.hongenit.simplepainting.drawableview.gestures.scale.ScalerListener;
 import com.hongenit.simplepainting.drawableview.gestures.scroller.GestureScrollListener;
 import com.hongenit.simplepainting.drawableview.gestures.scroller.GestureScroller;
 import com.hongenit.simplepainting.drawableview.gestures.scroller.ScrollerListener;
+import com.hongenit.simplepainting.util.LogUtil;
 
 import java.util.ArrayList;
 
@@ -76,6 +77,21 @@ public class DrawableView extends View
         pathDrawer = new PathDrawer();
         canvasDrawer = new CanvasDrawer();
         setOnTouchListener(this);
+
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+
+        LogUtil.hong("getMeasuredWidth = " + getMeasuredWidth());
+        super.onAttachedToWindow();
+        getHandler().post(new Runnable() {
+            @Override
+            public void run() {
+                setCanvasWidthAndHeight(getMeasuredWidth(), getMeasuredHeight());
+
+            }
+        });
     }
 
     public void setConfig(DrawableViewConfig config) {
@@ -88,6 +104,12 @@ public class DrawableView extends View
         gestureScaler.setZooms(config.getMinZoom(), config.getMaxZoom());
         gestureScroller.setCanvasBounds(canvasWidth, canvasHeight);
         canvasDrawer.setConfig(config);
+    }
+
+    public void setCanvasWidthAndHeight(int width, int height) {
+        LogUtil.hong(" width = " + width + "    height = " + height);
+        canvasWidth = width;
+        canvasHeight = height;
     }
 
     @Override

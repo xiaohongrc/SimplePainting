@@ -89,7 +89,7 @@
             android:layout_height="wrap_content"
             android:drawablePadding="6dp"
             android:drawableStart="@drawable/ic_favour_16dp"
-            android:text="drawer_item_favourite" />
+            android:text="@string/drawer_item_change_bg_color" />
 
         <View
             android:layout_width="match_parent"
